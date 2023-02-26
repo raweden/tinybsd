@@ -48,7 +48,7 @@ struct rl_q_entry {
 static uma_zone_t rl_entry_zone;
 
 static void
-rangelock_sys_init(void)
+rangelock_sys_init(void *arg __unused)
 {
 
 	rl_entry_zone = uma_zcreate("rl_entry", sizeof(struct rl_q_entry),

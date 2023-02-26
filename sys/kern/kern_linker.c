@@ -416,7 +416,7 @@ linker_file_register_modules(linker_file_t lf)
 }
 
 static void
-linker_init_kernel_modules(void)
+linker_init_kernel_modules(void *arg __unused)
 {
 
 	sx_xlock(&kld_sx);

@@ -88,7 +88,7 @@ static int rt_ifdelroute(const struct rtentry *rt, const struct nhop_object *,
  * SI_ORDER_MIDDLE.
  */
 static void
-route_init(void)
+route_init(void *arg __unused)
 {
 
 	nhops_init();

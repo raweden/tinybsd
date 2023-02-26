@@ -135,7 +135,7 @@ static struct cdev *devctl_dev;
 static void devaddq(const char *type, const char *what, device_t dev);
 
 static void
-devctl_init(void)
+devctl_init(void *arg __unused)
 {
 	int reserve;
 	uma_zone_t z;

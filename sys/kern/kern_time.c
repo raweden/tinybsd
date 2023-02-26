@@ -92,7 +92,7 @@ static int	user_clock_nanosleep(struct thread *td, clockid_t clock_id,
 		    int flags, const struct timespec *ua_rqtp,
 		    struct timespec *ua_rmtp);
 
-static void	itimer_start(void);
+static void	itimer_start(void *);
 static int	itimer_init(void *, int, int);
 static void	itimer_fini(void *, int);
 static void	itimer_enter(struct itimer *);

@@ -269,7 +269,7 @@ poll_shutdown(void *arg, int howto)
 }
 
 static void
-init_device_poll(void)
+init_device_poll(void *arg __unused)
 {
 
 	mtx_init(&poll_mtx, "polling", NULL, MTX_DEF);

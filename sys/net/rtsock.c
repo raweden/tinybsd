@@ -249,7 +249,7 @@ SYSCTL_PROC(_net_route, OID_AUTO, netisr_maxqlen,
     "maximum routing socket dispatch queue length");
 
 static void
-vnet_rts_init(void)
+vnet_rts_init(void *arg __unused)
 {
 	int tmp;
 
@@ -312,7 +312,7 @@ rtsock_notify_event(uint32_t fibnum, const struct rib_cmd_info *rc)
 }
 
 static void
-rtsock_init(void)
+rtsock_init(void *arg __unused)
 {
 	rtsbridge_orig_p = rtsock_callback_p;
 	rtsock_callback_p = &rtsbridge;

@@ -149,7 +149,7 @@ static void 	knote_drop(struct knote *kn, struct thread *td);
 static void 	knote_drop_detached(struct knote *kn, struct thread *td);
 static void 	knote_enqueue(struct knote *kn);
 static void 	knote_dequeue(struct knote *kn);
-static void 	knote_init(void);
+static void 	knote_init(void *);
 static struct 	knote *knote_alloc(int mflag);
 static void 	knote_free(struct knote *kn);
 

@@ -356,7 +356,7 @@ ast_sigsuspend(struct thread *td, int tda __unused)
 }
 
 static void
-sigqueue_start(void)
+sigqueue_start(void *arg __unused)
 {
 	ksiginfo_zone = uma_zcreate("ksiginfo", sizeof(ksiginfo_t),
 		NULL, NULL, NULL, NULL, UMA_ALIGN_PTR, 0);
