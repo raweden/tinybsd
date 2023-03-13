@@ -37,7 +37,11 @@ __FBSDID("$FreeBSD$");
 #include <time.h>
 #include "libc_private.h"
 
+#ifndef __WASM
 __weak_reference(__sys_clock_nanosleep, __clock_nanosleep);
+#else 
+__weak_reference(__syscall_clock_nanosleep, __clock_nanosleep);
+#endif
 
 #pragma weak clock_nanosleep
 int

@@ -68,9 +68,10 @@ err_set_exit(void (*ef)(int))
 }
 
 __weak_reference(_err, err);
-
-void
-_err(int eval, const char *fmt, ...)
+#ifdef __WASM
+void err(int, const char *, ...) __attribute__((alias("_err")));
+#endif
+void _err(int eval, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -134,8 +135,10 @@ verrx(int eval, const char *fmt, va_list ap)
 
 __weak_reference(_warn, warn);
 
-void
-_warn(const char *fmt, ...)
+#ifdef __WASM
+void warn(const char *, ...) __attribute__((alias("_warn")));
+#endif
+void _warn(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

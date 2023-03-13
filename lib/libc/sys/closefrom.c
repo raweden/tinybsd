@@ -36,13 +36,20 @@ __FBSDID("$FreeBSD$");
 
 #define	CLOSE_RANGE_OSREL		1300091
 
+#ifdef __WASM
+	int __sys_close_range(unsigned int, unsigned int, int) __attribute__((import_module("libkern"), import_name("__sys_close_range")));
+#endif
+
 void
 closefrom(int lowfd)
 {
-
+#ifdef __WASM
+	__sys_close_range(MAX(0, lowfd), ~0U, 0);
+#else
 	if (__getosreldate() >= CLOSE_RANGE_OSREL)
 		__sys_close_range(MAX(0, lowfd), ~0U, 0);
 	else
 		/* Fallback to closefrom(2) on older kernels. */
-		syscall(SYS_freebsd12_closefrom, lowfd);
+		syscall(SYS_freebsd12_closefrom, lowfd);	
+#endif
 }

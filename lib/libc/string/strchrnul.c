@@ -36,6 +36,10 @@ __FBSDID("$FreeBSD$");
 
 char *__strchrnul(const char *, int);
 
+#ifdef __WASM
+char *strchrnul(const char *, int) __attribute__((alias("__strchrnul")));
+#endif
+
 char *
 __strchrnul(const char *s, int c)
 {

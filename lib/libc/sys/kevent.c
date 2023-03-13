@@ -37,7 +37,11 @@ __FBSDID("$FreeBSD$");
 #include <sys/time.h>
 #include "libc_private.h"
 
+#ifndef __WASM
 __weak_reference(__sys_kevent, __kevent);
+#else
+__weak_reference(__syscall_kevent, __kevent);
+#endif
 
 #pragma weak kevent
 int

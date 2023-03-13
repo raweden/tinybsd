@@ -36,8 +36,14 @@ __FBSDID("$FreeBSD$");
 #include <signal.h>
 #include "libc_private.h"
 
+#ifndef __WASM
 __weak_reference(__sys_sigprocmask, __sigprocmask);
 __weak_reference(sigprocmask, __libc_sigprocmask);
+#else
+int __libc_sigprocmask(int, const sigset_t *, sigset_t *) __attribute__((alias("sigprocmask")));
+#endif
+
+
 
 #pragma weak sigprocmask
 int

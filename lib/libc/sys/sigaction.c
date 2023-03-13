@@ -36,8 +36,12 @@ __FBSDID("$FreeBSD$");
 #include <signal.h>
 #include "libc_private.h"
 
+#ifndef __WASM
 __weak_reference(__sys_sigaction, __sigaction);
 __weak_reference(sigaction, __libc_sigaction);
+#else 
+int __libc_sigaction(int, const struct sigaction *, struct sigaction *) __attribute__((alias("sigaction")));
+#endif
 
 #pragma weak sigaction
 int

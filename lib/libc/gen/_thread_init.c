@@ -37,7 +37,11 @@ __weak_reference(_thread_init_stub, _thread_init);
 __weak_reference(_thread_autoinit_dummy_decl_stub,
     _thread_autoinit_dummy_decl);
 
+#ifndef __WASM
 int	_thread_autoinit_dummy_decl_stub = 0;
+#else 
+int	_thread_autoinit_dummy_decl = 0;
+#endif
 
 void
 _thread_init_stub(void)

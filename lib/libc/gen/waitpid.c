@@ -44,6 +44,11 @@ __FBSDID("$FreeBSD$");
 
 pid_t __waitpid(pid_t, int *, int);
 
+#ifdef __WASM
+pid_t waitpid(pid_t, int *, int) __attribute__((alias("__waitpid")));
+pid_t _waitpid(pid_t, int *, int) __attribute__((alias("__waitpid")));
+#endif
+
 pid_t
 __waitpid(pid_t pid, int *istat, int options)
 {

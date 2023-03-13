@@ -44,6 +44,10 @@ __FBSDID("$FreeBSD$");
 
 pid_t __wait3(int *, int, struct rusage *);
 
+#ifdef __WASM
+pid_t wait3(int *, int, struct rusage *) __attribute__((alias("__wait3")));
+#endif
+
 pid_t
 __wait3(int *istat, int options, struct rusage *rup)
 {

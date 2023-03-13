@@ -626,7 +626,9 @@ fb_endstate(void *p)
 }
 
 __weak_reference(_nsdispatch, nsdispatch);
-
+#ifdef __WASM
+int nsdispatch(void *, const ns_dtab disp_tab[], const char *database, const char *method_name, const ns_src defaults[], ...)  __attribute__((alias("_nsdispatch")));
+#endif
 int
 _nsdispatch(void *retval, const ns_dtab disp_tab[], const char *database,
 	    const char *method_name, const ns_src defaults[], ...)

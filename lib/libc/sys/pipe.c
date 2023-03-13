@@ -34,8 +34,13 @@
 
 #include <unistd.h>
 
+#ifndef __WASM
 __weak_reference(__sys_pipe, pipe);
 __weak_reference(__sys_pipe, _pipe);
+#else
+int pipe(int fildes[2]) __attribute__((weak, alias ("__sys_pipe")));
+int _pipe(int fildes[2]) __attribute__((weak, alias ("__sys_pipe")));
+#endif
 
 extern int __sys_pipe2(int fildes[2], int flags);
 

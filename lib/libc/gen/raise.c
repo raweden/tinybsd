@@ -38,6 +38,11 @@ __FBSDID("$FreeBSD$");
 
 #include "libc_private.h"
 
+#ifdef __WASM
+int raise(int) __attribute__((alias("__raise")));
+int _raise(int) __attribute__((alias("__raise")));
+#endif
+
 __weak_reference(__raise, raise);
 __weak_reference(__raise, _raise);
 int __raise(int);

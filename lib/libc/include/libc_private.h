@@ -413,7 +413,20 @@ int		__sys_utimensat(int fd, const char *path,
 int _execvpe(const char *, char * const *, char * const *);
 
 int _elf_aux_info(int aux, void *buf, int buflen);
+#ifdef __WASM
+struct dl_phdr_info {
+	void *dlpi_addr;
+	const char	*dlpi_name;
+	const void	*dlpi_phdr;
+	int	dlpi_phnum;
+	unsigned long long int dlpi_adds;
+	unsigned long long int dlpi_subs;
+	int		dlpi_tls_modid;
+	void		*dlpi_tls_data;
+};
+#else
 struct dl_phdr_info;
+#endif
 int __elf_phdr_match_addr(struct dl_phdr_info *, void *);
 void __init_elf_aux_vector(void);
 void __libc_map_stacks_exec(void);
@@ -424,8 +437,7 @@ void	_pthread_cancel_enter(int);
 void	_pthread_cancel_leave(int);
 
 struct _pthread_cleanup_info;
-void	___pthread_cleanup_push_imp(void (*)(void *), void *,
-	    struct _pthread_cleanup_info *);
+void	___pthread_cleanup_push_imp(void (*)(void *), void *, struct _pthread_cleanup_info *);
 void	___pthread_cleanup_pop_imp(int);
 
 void __throw_constraint_handler_s(const char * restrict msg, int error);

@@ -37,7 +37,11 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 #include "libc_private.h"
 
+#ifndef __WASM
 __weak_reference(__sys_fsync, __fsync);
+#else
+__weak_reference(__syscall_fsync, __fsync);
+#endif
 
 int
 fsync(int fd)
