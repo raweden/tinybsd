@@ -70,8 +70,13 @@ __FBSDID("$FreeBSD$");
 #include <vm/vm_phys.h>
 #include <vm/vm_pagequeue.h>
 
+#ifndef __wasm32__
 _Static_assert(sizeof(long) * NBBY >= VM_PHYSSEG_MAX,
     "Too many physsegs.");
+#else
+_Static_assert(sizeof(int64_t) * NBBY >= VM_PHYSSEG_MAX,
+    "Too many physsegs.");
+#endif
 
 #ifdef NUMA
 struct mem_affinity __read_mostly *mem_affinity;

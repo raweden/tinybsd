@@ -39,6 +39,11 @@
 #define	KASSERT(exp, msg)	/* */
 #endif
 
+#ifdef __WASM
+#define atomic_thread_fence_rel()
+#define atomic_thread_fence_acq()
+#endif
+
 #define	REFCOUNT_SATURATED(val)		(((val) & (1U << 31)) != 0)
 #define	REFCOUNT_SATURATION_VALUE	(3U << 30)
 

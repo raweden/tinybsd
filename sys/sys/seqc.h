@@ -90,8 +90,11 @@ seqc_read_notmodify(const seqc_t *seqcp)
 	return (atomic_load_acq_int(__DECONST(seqc_t *, seqcp)) & ~SEQC_MOD);
 }
 
-static __inline seqc_t
-seqc_read(const seqc_t *seqcp)
+#ifdef __WASM
+#define cpu_spinwait()
+#endif
+
+static __inline seqc_t seqc_read(const seqc_t *seqcp)
 {
 	seqc_t ret;
 

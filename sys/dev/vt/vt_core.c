@@ -166,7 +166,7 @@ extern unsigned int vt_logo_depth;
 extern unsigned char vt_logo_image[];
 #ifndef DEV_SPLASH
 #define	vtterm_draw_cpu_logos(...)	do {} while (0)
-const unsigned int vt_logo_sprite_height;
+extern const unsigned int vt_logo_sprite_height;
 #endif
 
 /*

@@ -932,4 +932,15 @@
 #define __align_down(x, y) __builtin_align_down(x, y)
 #define __is_aligned(x, y) __builtin_is_aligned(x, y)
 
+#ifdef __WASM
+#undef __sym_compat
+#define __sym_compat(sym,impl,verid)
+#undef __sym_default
+#define __sym_default(sym,impl,verid)
+#undef __weak_reference
+#define __weak_reference(sym, alias)
+#undef __warn_references
+#define __warn_references(sym, msg)
+#endif
+
 #endif /* !_SYS_CDEFS_H_ */

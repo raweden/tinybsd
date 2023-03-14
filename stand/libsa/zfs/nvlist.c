@@ -39,6 +39,10 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #endif
 
+#ifdef __WASM
+#include <sys/nv_namespace.h>
+#endif
+
 #include "nvlist.h"
 
 enum xdr_op {

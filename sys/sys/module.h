@@ -118,6 +118,9 @@ struct mod_pnp_match_info
 	};								\
 	DATA_SET(modmetadata_set, MODULE_METADATA_CONCAT(uniquifier))
 
+#ifdef __WASM
+#define MODULE_DEPEND(module, mdepend, vmin, vpref, vmax) // just make them dissaper for now.
+#else
 #define	MODULE_DEPEND(module, mdepend, vmin, vpref, vmax)		\
 	static struct mod_depend _##module##_depend_on_##mdepend	\
 	    __section(".data") = {					\
@@ -127,6 +130,7 @@ struct mod_pnp_match_info
 	};								\
 	MODULE_METADATA(_md_##module##_on_##mdepend, MDT_DEPEND,	\
 	    &_##module##_depend_on_##mdepend, #mdepend)
+#endif
 
 /*
  * Every kernel has a 'kernel' module with the version set to
@@ -165,6 +169,9 @@ struct mod_pnp_match_info
 	DECLARE_MODULE_WITH_MAXVER(name, data, sub, order, __FreeBSD_version)
 
 #define	MODULE_VERSION_CONCAT(module, version)	_##module##_version
+#ifdef __WASM
+#define MODULE_VERSION(module, version) // just make them disappear for now.
+#else
 #define	MODULE_VERSION(module, version)					\
 	static struct mod_version MODULE_VERSION_CONCAT(module, version)\
 	    __section(".data") = {					\
@@ -172,6 +179,7 @@ struct mod_pnp_match_info
 	};								\
 	MODULE_METADATA(MODULE_VERSION_CONCAT(module, version), MDT_VERSION,\
 	    &MODULE_VERSION_CONCAT(module, version), __XSTRING(module))
+#endif
 
 /**
  * Generic macros to create pnp info hints that modules may export

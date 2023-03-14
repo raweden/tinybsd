@@ -543,7 +543,7 @@ kdb_init(void)
 		    kdb_dbbe->dbbe_name);
 	}
 }
-
+#ifndef __WASM
 /*
  * Handle contexts.
  */
@@ -556,6 +556,7 @@ kdb_jmpbuf(jmp_buf new)
 	kdb_jmpbufp = new;
 	return (old);
 }
+#endif
 
 void
 kdb_reenter(void)

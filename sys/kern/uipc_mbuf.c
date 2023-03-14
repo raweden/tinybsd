@@ -204,7 +204,11 @@ CTASSERT(offsetof(struct mbuf, m_pktdat) % 8 == 0);
  * NB: Possibly they should be documented there via #define's and not just
  * comments.
  */
-#if defined(__LP64__)
+#if defined(__wasm32__)
+CTASSERT(offsetof(struct mbuf, m_dat) == 24);
+CTASSERT(sizeof(struct pkthdr) == 56);
+CTASSERT(sizeof(struct m_ext) == 176);
+#elif defined(__LP64__)
 CTASSERT(offsetof(struct mbuf, m_dat) == 32);
 CTASSERT(sizeof(struct pkthdr) == 64);
 CTASSERT(sizeof(struct m_ext) == 160);

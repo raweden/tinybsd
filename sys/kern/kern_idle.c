@@ -53,6 +53,7 @@ SYSINIT(idle_setup, SI_SUB_SCHED_IDLE, SI_ORDER_FIRST, idle_setup, NULL);
 static void
 idle_setup(void *dummy)
 {
+#ifndef __WASM
 #ifdef SMP
 	struct pcpu *pc;
 #endif
@@ -84,5 +85,6 @@ idle_setup(void *dummy)
 		thread_unlock(td);
 #ifdef SMP
 	}
+#endif
 #endif
 }

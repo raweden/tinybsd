@@ -252,51 +252,74 @@ sysinit_tslog_shim(const void * data)
 	(x->func)(x->data);
 	TSRAW(curthread, TS_EXIT, "SYSINIT", x->name);
 }
-#define	C_SYSINIT(uniquifier, subsystem, order, func, ident)	\
-	static struct sysinit_tslog uniquifier ## _sys_init_tslog = {	\
-		func,						\
-		(ident),					\
-		#uniquifier					\
-	};							\
-	static struct sysinit uniquifier ## _sys_init = {	\
-		subsystem,					\
-		order,						\
-		sysinit_tslog_shim,				\
-		&uniquifier ## _sys_init_tslog			\
-	};							\
-	DATA_WSET(sysinit_set,uniquifier ## _sys_init)
+#define C_SYSINIT(uniquifier, subsystem, order, func, ident)    \
+    static struct sysinit_tslog uniquifier ## _sys_init_tslog = {   \
+        func,                       \
+        (ident),                    \
+        #uniquifier                 \
+    };                          \
+    static struct sysinit uniquifier ## _sys_init = {   \
+        subsystem,                  \
+        order,                      \
+        sysinit_tslog_shim,             \
+        &uniquifier ## _sys_init_tslog          \
+    };                          \
+    DATA_WSET(sysinit_set,uniquifier ## _sys_init)
 #else
-#define	C_SYSINIT(uniquifier, subsystem, order, func, ident)	\
-	static struct sysinit uniquifier ## _sys_init = {	\
-		subsystem,					\
-		order,						\
-		func,						\
-		(ident)						\
-	};							\
-	DATA_WSET(sysinit_set,uniquifier ## _sys_init)
+
+// attribute ((used)) only works on functions in clang, this is the walkaround; not declaring it as static,
+// requiring a unque named variable.
+#define ___PASTE(a,b) a##b
+#define __PASTE(a,b) ___PASTE(a,b)
+#define __C_SYSINIT_MAKE_SET_QV(set, sym, qv)		\
+	__WEAK(__CONCAT(__start_set_,set));				\
+	__WEAK(__CONCAT(__stop_set_,set));			    \
+	void const * qv									\
+	__NOASAN									    \
+	__PASTE(__set_,                                 \
+    __PASTE(set,                                    \
+    __PASTE(_sym_,                                  \
+    __PASTE(sym,                                    \
+    __PASTE(_,                                      \
+    __PASTE(__COUNTER__,                            \
+    __PASTE(_, __LINE__)))))))                      \
+    __section("set_" #set)			                \
+	__used = &(sym);
+#define __C_SYSINIT_DATA_WSET(set, sym)	__C_SYSINIT_MAKE_SET_QV(set, sym, )
+
+#define C_SYSINIT(uniquifier, subsystem, order, func, ident)    \
+    static struct sysinit uniquifier##_sys_init = {             \
+        subsystem,                                              \
+        order,                                                  \
+        func,                                                   \
+        (ident)                                                 \
+    };                                                          \
+    __C_SYSINIT_DATA_WSET(sysinit_set, uniquifier ## _sys_init)
+    //DATA_WSET(set_sysinit, uniquifier ## _sys_init)
+    // static const void *sysinit_entry_##uniquifier __section("set_sysinit") __used = &(uniquifier ## _sys_init)
 #endif
 
-#define	SYSINIT(uniquifier, subsystem, order, func, ident)	\
-	C_SYSINIT(uniquifier, subsystem, order,			\
-	(sysinit_cfunc_t)(sysinit_nfunc_t)func, (void *)(ident))
+#define SYSINIT(uniquifier, subsystem, order, func, ident)  \
+    C_SYSINIT(uniquifier, subsystem, order,         \
+    (sysinit_cfunc_t)(sysinit_nfunc_t)func, (void *)(ident))
 
 /*
  * Called on module unload: no special processing
  */
-#define	C_SYSUNINIT(uniquifier, subsystem, order, func, ident)	\
-	static struct sysinit uniquifier ## _sys_uninit = {	\
-		subsystem,					\
-		order,						\
-		func,						\
-		(ident)						\
-	};							\
-	DATA_WSET(sysuninit_set,uniquifier ## _sys_uninit)
+#define C_SYSUNINIT(uniquifier, subsystem, order, func, ident)  \
+    static struct sysinit uniquifier ## _sys_uninit = { \
+        subsystem,                                      \
+        order,                                          \
+        func,                                           \
+        (ident)                                         \
+    };                                                  \
+    __C_SYSINIT_DATA_WSET(sysuninit_set,uniquifier ## _sys_uninit)
 
-#define	SYSUNINIT(uniquifier, subsystem, order, func, ident)	\
-	C_SYSUNINIT(uniquifier, subsystem, order,		\
-	(sysinit_cfunc_t)(sysinit_nfunc_t)func, (void *)(ident))
+#define SYSUNINIT(uniquifier, subsystem, order, func, ident)    \
+    C_SYSUNINIT(uniquifier, subsystem, order,       \
+    (sysinit_cfunc_t)(sysinit_nfunc_t)func, (void *)(ident))
 
-void	sysinit_add(struct sysinit **set, struct sysinit **set_end);
+void    sysinit_add(struct sysinit **set, struct sysinit **set_end);
 
 #ifdef _KERNEL
 

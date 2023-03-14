@@ -61,6 +61,6 @@ struct mtx {
 struct mtx_padalign {
 	struct lock_object	lock_object;	/* Common lock properties. */
 	volatile uintptr_t	mtx_lock;	/* Owner and flags. */
-} __aligned(CACHE_LINE_SIZE);
+}; //__aligned(CACHE_LINE_SIZE);
 
 #endif /* !_SYS__MUTEX_H_ */

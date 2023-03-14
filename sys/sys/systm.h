@@ -97,10 +97,23 @@ enum VM_GUEST { VM_GUEST_NO = 0, VM_GUEST_VM, VM_GUEST_XEN, VM_GUEST_HV,
 struct ucred;
 #endif
 
+#ifdef __WASM
+#undef __read_mostly
+#undef __read_frequently
+#undef __exclusive_cache_line
+#define __read_mostly
+#define __read_frequently
+#define __exclusive_cache_line
+#endif
+
 #ifdef _KERNEL
 #include <sys/param.h>		/* MAXCPU */
 #include <sys/pcpu.h>		/* curthread */
 #include <sys/kpilite.h>
+
+#ifdef __WASM
+#include <machine/wasm_module.h>
+#endif
 
 extern int osreldate;
 
@@ -174,27 +187,30 @@ int linux_alloc_current_noop(struct thread *, int);
 static __inline void
 critical_enter(void)
 {
-	struct thread_lite *td;
+#if 0 // WASM
+    struct thread_lite *td;
 
-	td = (struct thread_lite *)curthread;
-	td->td_critnest++;
-	atomic_interrupt_fence();
+    td = (struct thread_lite *)curthread;
+    td->td_critnest++;
+    atomic_interrupt_fence();
+#endif
 }
 
 static __inline void
 critical_exit(void)
 {
-	struct thread_lite *td;
+#if 0 // WASM
+    struct thread_lite *td;
 
-	td = (struct thread_lite *)curthread;
-	KASSERT(td->td_critnest != 0,
-	    ("critical_exit: td_critnest == 0"));
-	atomic_interrupt_fence();
-	td->td_critnest--;
-	atomic_interrupt_fence();
-	if (__predict_false(td->td_owepreempt))
-		critical_exit_preempt();
-
+    td = (struct thread_lite *)curthread;
+    KASSERT(td->td_critnest != 0,
+        ("critical_exit: td_critnest == 0"));
+    atomic_interrupt_fence();
+    td->td_critnest--;
+    atomic_interrupt_fence();
+    if (__predict_false(td->td_owepreempt))
+        critical_exit_preempt();
+#endif
 }
 #endif
 
@@ -237,10 +253,40 @@ void	hexdump(const void *ptr, int length, const char *hdr, int flags);
 #define ovbcopy(f, t, l) bcopy((f), (t), (l))
 void	explicit_bzero(void * _Nonnull, size_t);
 
-void	*memset(void * _Nonnull buf, int c, size_t len);
-void	*memcpy(void * _Nonnull to, const void * _Nonnull from, size_t len);
-void	*memmove(void * _Nonnull dest, const void * _Nonnull src, size_t n);
-int	memcmp(const void *b1, const void *b2, size_t len);
+#ifdef WASM_OPT_MEMINST
+// this provides a layer which allows clang to optimize for the stack signature that
+// is present for the memory.fill and memory.copy instructions within wasm. 
+void arch_memset(void *dst, int fill, size_t len);
+void arch_memcpy(void *dst, const void *src, size_t len);
+
+static inline void *memset(void * _Nonnull dst, int c, size_t len)
+{
+    arch_memset(dst, c, len);
+    return dst;
+}
+
+inline void *__memcpy(void * _Nonnull dst, const void * _Nonnull src, size_t len)
+{
+    arch_memcpy(dst, src, len);
+    return dst;
+}
+
+//void memcpy(void * _Nonnull dst, const void * _Nonnull src, size_t len) __attribute__ ((weak, alias ("__memcpy")));
+
+static inline void *__inline_memcpy(void * _Nonnull dst, const void * _Nonnull src, size_t len)
+{
+    arch_memcpy(dst, src, len);
+    return dst;
+}
+
+#define memcpy(to, from, len)   __inline_memcpy((to), (from), (len))
+
+#else
+void *memset(void * _Nonnull buf, int c, size_t len);
+void *memcpy(void * _Nonnull to, const void * _Nonnull from, size_t len);
+#endif
+void *memmove(void * _Nonnull dest, const void * _Nonnull src, size_t n);
+int memcmp(const void *b1, const void *b2, size_t len);
 
 #ifdef SAN_NEEDS_INTERCEPTORS
 #define	SAN_INTERCEPTOR(func)	\
@@ -259,127 +305,150 @@ int	SAN_INTERCEPTOR(memcmp)(const void *, const void *, size_t);
 #define memcmp(b1, b2, len)	SAN_INTERCEPTOR(memcmp)((b1), (b2), (len))
 #endif /* !SAN_RUNTIME */
 #else /* !SAN_NEEDS_INTERCEPTORS */
-#define bcopy(from, to, len)	__builtin_memmove((to), (from), (len))
-#define bzero(buf, len)		__builtin_memset((buf), 0, (len))
-#define bcmp(b1, b2, len)	__builtin_memcmp((b1), (b2), (len))
-#define memset(buf, c, len)	__builtin_memset((buf), (c), (len))
-#define memcpy(to, from, len)	__builtin_memcpy((to), (from), (len))
-#define memmove(dest, src, n)	__builtin_memmove((dest), (src), (n))
-#define memcmp(b1, b2, len)	__builtin_memcmp((b1), (b2), (len))
+#define bcopy(from, to, len)    __builtin_memmove((to), (from), (len))
+#ifdef WASM_OPT_MEMINST
+#define bzero(buf, len)     memset((buf), 0, (len))
+#else 
+#define bzero(buf, len)     __builtin_memset((buf), 0, (len))
+#define memset(buf, c, len) __builtin_memset((buf), (c), (len))
+#define memcpy(to, from, len)   __builtin_memcpy((to), (from), (len))
+//#define memmove(dest, src, n)   __builtin_memmove((dest), (src), (n))
+#endif
+#define bcmp(b1, b2, len)   __builtin_memcmp((b1), (b2), (len))
+#define memcmp(b1, b2, len) __builtin_memcmp((b1), (b2), (len))
 #endif /* SAN_NEEDS_INTERCEPTORS */
 
-void	*memset_early(void * _Nonnull buf, int c, size_t len);
+void    *memset_early(void * _Nonnull buf, int c, size_t len);
 #define bzero_early(buf, len) memset_early((buf), 0, (len))
-void	*memcpy_early(void * _Nonnull to, const void * _Nonnull from, size_t len);
-void	*memmove_early(void * _Nonnull dest, const void * _Nonnull src, size_t n);
+void    *memcpy_early(void * _Nonnull to, const void * _Nonnull from, size_t len);
+void    *memmove_early(void * _Nonnull dest, const void * _Nonnull src, size_t n);
 #define bcopy_early(from, to, len) memmove_early((to), (from), (len))
 
-#define	copystr(src, dst, len, outlen)	({			\
-	size_t __r, __len, *__outlen;				\
-								\
-	__len = (len);						\
-	__outlen = (outlen);					\
-	__r = strlcpy((dst), (src), __len);			\
-	if (__outlen != NULL)					\
-		*__outlen = ((__r >= __len) ? __len : __r + 1);	\
-	((__r >= __len) ? ENAMETOOLONG : 0);			\
+#define copystr(src, dst, len, outlen)  ({          \
+    size_t __r, __len, *__outlen;               \
+                                \
+    __len = (len);                      \
+    __outlen = (outlen);                    \
+    __r = strlcpy((dst), (src), __len);         \
+    if (__outlen != NULL)                   \
+        *__outlen = ((__r >= __len) ? __len : __r + 1); \
+    ((__r >= __len) ? ENAMETOOLONG : 0);            \
 })
-
-int	copyinstr(const void * __restrict udaddr,
-	    void * _Nonnull __restrict kaddr, size_t len,
-	    size_t * __restrict lencopied);
-int	copyin(const void * __restrict udaddr,
-	    void * _Nonnull __restrict kaddr, size_t len);
-int	copyin_nofault(const void * __restrict udaddr,
-	    void * _Nonnull __restrict kaddr, size_t len);
-int	copyout(const void * _Nonnull __restrict kaddr,
-	    void * __restrict udaddr, size_t len);
-int	copyout_nofault(const void * _Nonnull __restrict kaddr,
-	    void * __restrict udaddr, size_t len);
+#ifdef __WASM
+int copyinstr(const void * __restrict udaddr, void * _Nonnull __restrict kaddr, size_t len, size_t * __restrict lencopied) __WASM_IMPORT(kern, __copyinstr);
+int copyin(const void * __restrict udaddr, void * _Nonnull __restrict kaddr, size_t len) __WASM_IMPORT(kern, __copyin);
+int copyin_nofault(const void * __restrict udaddr, void * _Nonnull __restrict kaddr, size_t len) __WASM_IMPORT(kern, __copyin_nofault);
+int copyout(const void * _Nonnull __restrict kaddr, void * __restrict udaddr, size_t len) __WASM_IMPORT(kern, __copyout);
+int copyout_nofault(const void * _Nonnull __restrict kaddr, void * __restrict udaddr, size_t len) __WASM_IMPORT(kern, __copyout_nofault);
+#else
+int copyinstr(const void * __restrict udaddr, void * _Nonnull __restrict kaddr, size_t len, size_t * __restrict lencopied);
+int copyin(const void * __restrict udaddr, void * _Nonnull __restrict kaddr, size_t len);
+int copyin_nofault(const void * __restrict udaddr, void * _Nonnull __restrict kaddr, size_t len);
+int copyout(const void * _Nonnull __restrict kaddr, void * __restrict udaddr, size_t len);
+int copyout_nofault(const void * _Nonnull __restrict kaddr, void * __restrict udaddr, size_t len);
+#endif
 
 #ifdef SAN_NEEDS_INTERCEPTORS
-int	SAN_INTERCEPTOR(copyin)(const void *, void *, size_t);
-int	SAN_INTERCEPTOR(copyinstr)(const void *, void *, size_t, size_t *);
-int	SAN_INTERCEPTOR(copyout)(const void *, void *, size_t);
+int SAN_INTERCEPTOR(copyin)(const void *, void *, size_t);
+int SAN_INTERCEPTOR(copyinstr)(const void *, void *, size_t, size_t *);
+int SAN_INTERCEPTOR(copyout)(const void *, void *, size_t);
 #ifndef SAN_RUNTIME
-#define	copyin(u, k, l)		SAN_INTERCEPTOR(copyin)((u), (k), (l))
-#define	copyinstr(u, k, l, lc)	SAN_INTERCEPTOR(copyinstr)((u), (k), (l), (lc))
-#define	copyout(k, u, l)	SAN_INTERCEPTOR(copyout)((k), (u), (l))
+#define copyin(u, k, l)     SAN_INTERCEPTOR(copyin)((u), (k), (l))
+#define copyinstr(u, k, l, lc)  SAN_INTERCEPTOR(copyinstr)((u), (k), (l), (lc))
+#define copyout(k, u, l)    SAN_INTERCEPTOR(copyout)((k), (u), (l))
 #endif /* !SAN_RUNTIME */
 #endif /* SAN_NEEDS_INTERCEPTORS */
 
-int	fubyte(volatile const void *base);
-long	fuword(volatile const void *base);
-int	fuword16(volatile const void *base);
-int32_t	fuword32(volatile const void *base);
-int64_t	fuword64(volatile const void *base);
-int	fueword(volatile const void *base, long *val);
-int	fueword32(volatile const void *base, int32_t *val);
-int	fueword64(volatile const void *base, int64_t *val);
-int	subyte(volatile void *base, int byte);
-int	suword(volatile void *base, long word);
-int	suword16(volatile void *base, int word);
-int	suword32(volatile void *base, int32_t word);
-int	suword64(volatile void *base, int64_t word);
+#ifdef __WASM
+int fubyte(volatile const void *base) __WASM_IMPORT(kern, fubyte);
+long fuword(volatile const void *base) __WASM_IMPORT(kern, fuword);
+int fuword16(volatile const void *base) __WASM_IMPORT(kern, fuword16);
+int32_t fuword32(volatile const void *base) __WASM_IMPORT(kern, fuword32);
+int64_t fuword64(volatile const void *base) __WASM_IMPORT(kern, fuword64);
+int fueword(volatile const void *base, long *val) __WASM_IMPORT(kern, fueword);
+int fueword32(volatile const void *base, int32_t *val) __WASM_IMPORT(kern, fueword32);
+int fueword64(volatile const void *base, int64_t *val) __WASM_IMPORT(kern, fueword64);
+int subyte(volatile void *base, int byte) __WASM_IMPORT(kern, subyte);
+int suword(volatile void *base, long word) __WASM_IMPORT(kern, suword);
+int suword16(volatile void *base, int word) __WASM_IMPORT(kern, suword16);
+int suword32(volatile void *base, int32_t word) __WASM_IMPORT(kern, suword32);
+int suword64(volatile void *base, int64_t word) __WASM_IMPORT(kern, suword64);
+uint32_t casuword32(volatile uint32_t *base, uint32_t oldval, uint32_t newval) __WASM_IMPORT(kern, casuword32);
+u_long casuword(volatile u_long *p, u_long oldval, u_long newval) __WASM_IMPORT(kern, casuword);
+int casueword32(volatile uint32_t *base, uint32_t oldval, uint32_t *oldvalp, uint32_t newval) __WASM_IMPORT(kern, casueword32);
+int casueword(volatile u_long *p, u_long oldval, u_long *oldvalp, u_long newval) __WASM_IMPORT(kern, casueword);
+#else
+int fubyte(volatile const void *base);
+long fuword(volatile const void *base);
+int fuword16(volatile const void *base);
+int32_t fuword32(volatile const void *base);
+int64_t fuword64(volatile const void *base);
+int fueword(volatile const void *base, long *val);
+int fueword32(volatile const void *base, int32_t *val);
+int fueword64(volatile const void *base, int64_t *val);
+int subyte(volatile void *base, int byte);
+int suword(volatile void *base, long word);
+int suword16(volatile void *base, int word);
+int suword32(volatile void *base, int32_t word);
+int suword64(volatile void *base, int64_t word);
 uint32_t casuword32(volatile uint32_t *base, uint32_t oldval, uint32_t newval);
-u_long	casuword(volatile u_long *p, u_long oldval, u_long newval);
-int	casueword32(volatile uint32_t *base, uint32_t oldval, uint32_t *oldvalp,
-	    uint32_t newval);
-int	casueword(volatile u_long *p, u_long oldval, u_long *oldvalp,
-	    u_long newval);
+u_long casuword(volatile u_long *p, u_long oldval, u_long newval);
+int casueword32(volatile uint32_t *base, uint32_t oldval, uint32_t *oldvalp, uint32_t newval);
+int casueword(volatile u_long *p, u_long oldval, u_long *oldvalp, u_long newval);
+#endif
 
 #if defined(SAN_NEEDS_INTERCEPTORS) && !defined(KCSAN)
-int	SAN_INTERCEPTOR(fubyte)(volatile const void *base);
-int	SAN_INTERCEPTOR(fuword16)(volatile const void *base);
-int	SAN_INTERCEPTOR(fueword)(volatile const void *base, long *val);
-int	SAN_INTERCEPTOR(fueword32)(volatile const void *base, int32_t *val);
-int	SAN_INTERCEPTOR(fueword64)(volatile const void *base, int64_t *val);
-int	SAN_INTERCEPTOR(subyte)(volatile void *base, int byte);
-int	SAN_INTERCEPTOR(suword)(volatile void *base, long word);
-int	SAN_INTERCEPTOR(suword16)(volatile void *base, int word);
-int	SAN_INTERCEPTOR(suword32)(volatile void *base, int32_t word);
-int	SAN_INTERCEPTOR(suword64)(volatile void *base, int64_t word);
-int	SAN_INTERCEPTOR(casueword32)(volatile uint32_t *base, uint32_t oldval,
-	    uint32_t *oldvalp, uint32_t newval);
-int	SAN_INTERCEPTOR(casueword)(volatile u_long *p, u_long oldval,
-	    u_long *oldvalp, u_long newval);
+int SAN_INTERCEPTOR(fubyte)(volatile const void *base);
+int SAN_INTERCEPTOR(fuword16)(volatile const void *base);
+int SAN_INTERCEPTOR(fueword)(volatile const void *base, long *val);
+int SAN_INTERCEPTOR(fueword32)(volatile const void *base, int32_t *val);
+int SAN_INTERCEPTOR(fueword64)(volatile const void *base, int64_t *val);
+int SAN_INTERCEPTOR(subyte)(volatile void *base, int byte);
+int SAN_INTERCEPTOR(suword)(volatile void *base, long word);
+int SAN_INTERCEPTOR(suword16)(volatile void *base, int word);
+int SAN_INTERCEPTOR(suword32)(volatile void *base, int32_t word);
+int SAN_INTERCEPTOR(suword64)(volatile void *base, int64_t word);
+int SAN_INTERCEPTOR(casueword32)(volatile uint32_t *base, uint32_t oldval,
+        uint32_t *oldvalp, uint32_t newval);
+int SAN_INTERCEPTOR(casueword)(volatile u_long *p, u_long oldval,
+        u_long *oldvalp, u_long newval);
 #ifndef SAN_RUNTIME
-#define	fubyte(b)		SAN_INTERCEPTOR(fubyte)((b))
-#define	fuword16(b)		SAN_INTERCEPTOR(fuword16)((b))
-#define	fueword(b, v)		SAN_INTERCEPTOR(fueword)((b), (v))
-#define	fueword32(b, v)		SAN_INTERCEPTOR(fueword32)((b), (v))
-#define	fueword64(b, v)		SAN_INTERCEPTOR(fueword64)((b), (v))
-#define	subyte(b, w)		SAN_INTERCEPTOR(subyte)((b), (w))
-#define	suword(b, w)		SAN_INTERCEPTOR(suword)((b), (w))
-#define	suword16(b, w)		SAN_INTERCEPTOR(suword16)((b), (w))
-#define	suword32(b, w)		SAN_INTERCEPTOR(suword32)((b), (w))
-#define	suword64(b, w)		SAN_INTERCEPTOR(suword64)((b), (w))
-#define	casueword32(b, o, p, n)	SAN_INTERCEPTOR(casueword32)((b), (o), (p), (n))
-#define	casueword(b, o, p, n)	SAN_INTERCEPTOR(casueword)((b), (o), (p), (n))
+#define fubyte(b)       SAN_INTERCEPTOR(fubyte)((b))
+#define fuword16(b)     SAN_INTERCEPTOR(fuword16)((b))
+#define fueword(b, v)       SAN_INTERCEPTOR(fueword)((b), (v))
+#define fueword32(b, v)     SAN_INTERCEPTOR(fueword32)((b), (v))
+#define fueword64(b, v)     SAN_INTERCEPTOR(fueword64)((b), (v))
+#define subyte(b, w)        SAN_INTERCEPTOR(subyte)((b), (w))
+#define suword(b, w)        SAN_INTERCEPTOR(suword)((b), (w))
+#define suword16(b, w)      SAN_INTERCEPTOR(suword16)((b), (w))
+#define suword32(b, w)      SAN_INTERCEPTOR(suword32)((b), (w))
+#define suword64(b, w)      SAN_INTERCEPTOR(suword64)((b), (w))
+#define casueword32(b, o, p, n) SAN_INTERCEPTOR(casueword32)((b), (o), (p), (n))
+#define casueword(b, o, p, n)   SAN_INTERCEPTOR(casueword)((b), (o), (p), (n))
 #endif /* !SAN_RUNTIME */
 #endif /* SAN_NEEDS_INTERCEPTORS && !KCSAN */
 
-int	sysbeep(int hertz, sbintime_t duration);
+int sysbeep(int hertz, sbintime_t duration);
 
-void	hardclock(int cnt, int usermode);
-void	hardclock_sync(int cpu);
-void	statclock(int cnt, int usermode);
-void	profclock(int cnt, int usermode, uintfptr_t pc);
+void    hardclock(int cnt, int usermode);
+void    hardclock_sync(int cpu);
+void    statclock(int cnt, int usermode);
+void    profclock(int cnt, int usermode, uintfptr_t pc);
 
-int	hardclockintr(void);
+int hardclockintr(void);
 
-void	startprofclock(struct proc *);
-void	stopprofclock(struct proc *);
-void	cpu_startprofclock(void);
-void	cpu_stopprofclock(void);
-void	suspendclock(void);
-void	resumeclock(void);
-sbintime_t 	cpu_idleclock(void);
-void	cpu_activeclock(void);
-void	cpu_new_callout(int cpu, sbintime_t bt, sbintime_t bt_opt);
-void	cpu_et_frequency(struct eventtimer *et, uint64_t newfreq);
-extern int	cpu_disable_c2_sleep;
-extern int	cpu_disable_c3_sleep;
+void    startprofclock(struct proc *);
+void    stopprofclock(struct proc *);
+void    cpu_startprofclock(void);
+void    cpu_stopprofclock(void);
+void    suspendclock(void);
+void    resumeclock(void);
+sbintime_t  cpu_idleclock(void);
+void    cpu_activeclock(void);
+void    cpu_new_callout(int cpu, sbintime_t bt, sbintime_t bt_opt);
+void    cpu_et_frequency(struct eventtimer *et, uint64_t newfreq);
+extern int  cpu_disable_c2_sleep;
+extern int  cpu_disable_c3_sleep;
 
 char	*kern_getenv(const char *name);
 void	freeenv(char *env);
@@ -433,36 +502,34 @@ static __inline void		splx(intrmask_t ipl __unused)	{ return; }
  * Common `proc' functions are declared here so that proc.h can be included
  * less often.
  */
-int	_sleep(const void * _Nonnull chan, struct lock_object *lock, int pri,
-	   const char *wmesg, sbintime_t sbt, sbintime_t pr, int flags);
-#define	msleep(chan, mtx, pri, wmesg, timo)				\
-	_sleep((chan), &(mtx)->lock_object, (pri), (wmesg),		\
-	    tick_sbt * (timo), 0, C_HARDCLOCK)
-#define	msleep_sbt(chan, mtx, pri, wmesg, bt, pr, flags)		\
-	_sleep((chan), &(mtx)->lock_object, (pri), (wmesg), (bt), (pr),	\
-	    (flags))
-int	msleep_spin_sbt(const void * _Nonnull chan, struct mtx *mtx,
-	    const char *wmesg, sbintime_t sbt, sbintime_t pr, int flags);
-#define	msleep_spin(chan, mtx, wmesg, timo)				\
-	msleep_spin_sbt((chan), (mtx), (wmesg), tick_sbt * (timo),	\
-	    0, C_HARDCLOCK)
-int	pause_sbt(const char *wmesg, sbintime_t sbt, sbintime_t pr,
-	    int flags);
-static __inline int
-pause(const char *wmesg, int timo)
+int _sleep(const void * _Nonnull chan, struct lock_object *lock, int pri,
+       const char *wmesg, sbintime_t sbt, sbintime_t pr, int flags);
+#define msleep(chan, mtx, pri, wmesg, timo)             \
+    _sleep((chan), &(mtx)->lock_object, (pri), (wmesg),     \
+        tick_sbt * (timo), 0, C_HARDCLOCK)
+#define msleep_sbt(chan, mtx, pri, wmesg, bt, pr, flags)        \
+    _sleep((chan), &(mtx)->lock_object, (pri), (wmesg), (bt), (pr), \
+        (flags))
+int msleep_spin_sbt(const void * _Nonnull chan, struct mtx *mtx,
+        const char *wmesg, sbintime_t sbt, sbintime_t pr, int flags);
+#define msleep_spin(chan, mtx, wmesg, timo)             \
+    msleep_spin_sbt((chan), (mtx), (wmesg), tick_sbt * (timo),  \
+        0, C_HARDCLOCK)
+int pause_sbt(const char *wmesg, sbintime_t sbt, sbintime_t pr, int flags);
+static __inline int pause(const char *wmesg, int timo)
 {
-	return (pause_sbt(wmesg, tick_sbt * timo, 0, C_HARDCLOCK));
+    return (pause_sbt(wmesg, tick_sbt * timo, 0, C_HARDCLOCK));
 }
-#define	pause_sig(wmesg, timo)						\
-	pause_sbt((wmesg), tick_sbt * (timo), 0, C_HARDCLOCK | C_CATCH)
-#define	tsleep(chan, pri, wmesg, timo)					\
-	_sleep((chan), NULL, (pri), (wmesg), tick_sbt * (timo),		\
-	    0, C_HARDCLOCK)
-#define	tsleep_sbt(chan, pri, wmesg, bt, pr, flags)			\
-	_sleep((chan), NULL, (pri), (wmesg), (bt), (pr), (flags))
-void	wakeup(const void *chan);
-void	wakeup_one(const void *chan);
-void	wakeup_any(const void *chan);
+#define pause_sig(wmesg, timo)                      \
+    pause_sbt((wmesg), tick_sbt * (timo), 0, C_HARDCLOCK | C_CATCH)
+#define tsleep(chan, pri, wmesg, timo)                  \
+    _sleep((chan), NULL, (pri), (wmesg), tick_sbt * (timo),     \
+        0, C_HARDCLOCK)
+#define tsleep_sbt(chan, pri, wmesg, bt, pr, flags)         \
+    _sleep((chan), NULL, (pri), (wmesg), (bt), (pr), (flags))
+void wakeup(const void *chan);
+void wakeup_one(const void *chan);
+void wakeup_any(const void *chan);
 
 /*
  * Common `struct cdev *' stuff are declared here to avoid #include poisoning
@@ -473,20 +540,20 @@ dev_t dev2udev(struct cdev *x);
 const char *devtoname(struct cdev *cdev);
 
 #ifdef __LP64__
-size_t	devfs_iosize_max(void);
-size_t	iosize_max(void);
+size_t  devfs_iosize_max(void);
+size_t  iosize_max(void);
 #endif
 
 int poll_no_poll(int events);
 
 /* XXX: Should be void nanodelay(u_int nsec); */
-void	DELAY(int usec);
+void DELAY(int usec);
 
 /* Root mount holdback API */
 struct root_hold_token {
-	int				flags;
-	const char			*who;
-	TAILQ_ENTRY(root_hold_token)	list;
+    int        flags;
+    const char *who;
+    TAILQ_ENTRY(root_hold_token) list;
 };
 
 struct root_hold_token *root_mount_hold(const char *identifier);
@@ -498,7 +565,7 @@ int root_mounted(void);
  * Unit number allocation API. (kern/subr_unit.c)
  */
 struct unrhdr;
-#define	UNR_NO_MTX	((void *)(uintptr_t)-1)
+#define UNR_NO_MTX  ((void *)(uintptr_t)-1)
 struct unrhdr *new_unrhdr(int low, int high, struct mtx *mutex);
 void init_unrhdr(struct unrhdr *uh, int low, int high, struct mtx *mutex);
 void delete_unrhdr(struct unrhdr *uh);
@@ -511,24 +578,20 @@ int alloc_unrl(struct unrhdr *uh);
 void free_unr(struct unrhdr *uh, u_int item);
 
 struct unrhdr64 {
-        uint64_t	counter;
+        uint64_t    counter;
 };
 
-static __inline void
-new_unrhdr64(struct unrhdr64 *unr64, uint64_t low)
+static __inline void new_unrhdr64(struct unrhdr64 *unr64, uint64_t low)
 {
-
-	unr64->counter = low;
+    unr64->counter = low;
 }
 
-static __inline uint64_t
-alloc_unr64(struct unrhdr64 *unr64)
+static __inline uint64_t alloc_unr64(struct unrhdr64 *unr64)
 {
-
-	return (atomic_fetchadd_64(&unr64->counter, 1));
+    return (atomic_fetchadd_64(&unr64->counter, 1));
 }
 
-void	intr_prof_stack_use(struct thread *td, struct trapframe *frame);
+void    intr_prof_stack_use(struct thread *td, struct trapframe *frame);
 
 void counted_warning(unsigned *counter, const char *msg);
 
@@ -538,25 +601,25 @@ void counted_warning(unsigned *counter, const char *msg);
 void _gone_in(int major, const char *msg);
 void _gone_in_dev(device_t dev, int major, const char *msg);
 #ifdef NO_OBSOLETE_CODE
-#define __gone_ok(m, msg)					 \
-	_Static_assert(m < P_OSREL_MAJOR(__FreeBSD_version)),	 \
-	    "Obsolete code: " msg);
+#define __gone_ok(m, msg)                    \
+    _Static_assert(m < P_OSREL_MAJOR(__FreeBSD_version)),    \
+        "Obsolete code: " msg);
 #else
-#define	__gone_ok(m, msg)
+#define __gone_ok(m, msg)
 #endif
-#define gone_in(major, msg)		__gone_ok(major, msg) _gone_in(major, msg)
-#define gone_in_dev(dev, major, msg)	__gone_ok(major, msg) _gone_in_dev(dev, major, msg)
+#define gone_in(major, msg)     __gone_ok(major, msg) _gone_in(major, msg)
+#define gone_in_dev(dev, major, msg)    __gone_ok(major, msg) _gone_in_dev(dev, major, msg)
 
 #ifdef INVARIANTS
-#define	__diagused
+#define __diagused
 #else
-#define	__diagused	__unused
+#define __diagused  __unused
 #endif
 
 #ifdef WITNESS
-#define	__witness_used
+#define __witness_used
 #else
-#define	__witness_used	__unused
+#define __witness_used  __unused
 #endif
 
 #endif /* _KERNEL */

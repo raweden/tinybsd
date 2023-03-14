@@ -7,7 +7,9 @@
 #ifndef	_SYS_PRNG_H_
 #define	_SYS_PRNG_H_
 
+#ifndef __WASM
 #define	PCG_USE_INLINE_ASM	1
+#endif
 #include <contrib/pcg-c/include/pcg_variants.h>
 
 #ifdef	_KERNEL

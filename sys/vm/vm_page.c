@@ -765,6 +765,7 @@ vm_page_startup(vm_offset_t vaddr)
 	}
 #endif
 	vm_cnt.v_page_count = 0;
+#if 0
 	for (segind = 0; segind < vm_phys_nsegs; segind++) {
 		seg = &vm_phys_segs[segind];
 		for (m = seg->first_page, pa = seg->start; pa < seg->end;
@@ -797,6 +798,7 @@ vm_page_startup(vm_offset_t vaddr)
 			vmd->vmd_segs |= 1UL << segind;
 		}
 	}
+#endif
 
 	/*
 	 * Remove blacklisted pages from the physical memory allocator.

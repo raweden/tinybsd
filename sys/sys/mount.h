@@ -719,8 +719,7 @@ struct vfsquery {
 #define VQ_MOUNT	0x0008	/* new filesystem arrived */
 #define VQ_UNMOUNT	0x0010	/* filesystem has left */
 #define VQ_DEAD		0x0020	/* filesystem is dead, needs force unmount */
-#define VQ_ASSIST	0x0040	/* filesystem needs assistance from external
-				   program */
+#define VQ_ASSIST	0x0040	/* filesystem needs assistance from external program */
 #define VQ_NOTRESPLOCK	0x0080	/* server lockd down */
 #define VQ_FLAG0100	0x0100	/* placeholder */
 #define VQ_FLAG0200	0x0200	/* placeholder */
@@ -1102,6 +1101,13 @@ int	vfs_mount_fetch_counter(struct mount *, enum mount_counter);
 
 void suspend_all_fs(void);
 void resume_all_fs(void);
+
+#ifdef __WASM
+#undef zpcpu_get
+#undef zpcpu_get_cpu
+#define zpcpu_get(ptr)          (ptr)
+#define zpcpu_get_cpu(ptr, cpu) (ptr)
+#endif
 
 /*
  * Code transitioning mnt_vfs_ops to > 0 issues IPIs until it observes

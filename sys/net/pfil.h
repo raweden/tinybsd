@@ -105,7 +105,7 @@ static inline pfil_packet_t
 pfil_packet_align(pfil_packet_t p)
 {
 
-	return ((pfil_packet_t ) (((uintptr_t)(p).mem +
+	return (pfil_packet_t)((uintptr_t) (((uintptr_t)(p).mem +
 	    (_Alignof(void *) - 1)) & - _Alignof(void *)));
 }
 

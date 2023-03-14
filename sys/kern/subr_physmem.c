@@ -75,7 +75,7 @@ __FBSDID("$FreeBSD$");
 #define	MAX_EXCNT	16
 #endif
 
-#if defined(__arm__)
+#if defined(__arm__) || defined(__WASM)
 #define	MAX_PHYS_ADDR	0xFFFFFFFFull
 #elif defined(__aarch64__) || defined(__amd64__) || defined(__riscv)
 #define	MAX_PHYS_ADDR	0xFFFFFFFFFFFFFFFFull
@@ -520,6 +520,9 @@ physmem_init_kernel_globals(void)
 	hwphyssz = 0;
 	TUNABLE_ULONG_FETCH("hw.physmem", &hwphyssz);
 
+	log(0, "hwphyssz %lu", hwphyssz);
+	log(0, "PHYS_AVAIL_COUNT %d", PHYS_AVAIL_COUNT);
+
 	regions_to_avail(dump_avail, EXFLAG_NODUMP, PHYS_AVAIL_ENTRIES,
 	    hwphyssz, NULL, NULL);
 	nextidx = regions_to_avail(phys_avail, EXFLAG_NOALLOC,
@@ -528,6 +531,7 @@ physmem_init_kernel_globals(void)
 		panic("No memory entries in phys_avail");
 	Maxmem = atop(phys_avail[nextidx - 1]);
 }
+#endif
 
 #ifdef DDB
 #include <ddb/ddb.h>
@@ -539,98 +543,3 @@ DB_SHOW_COMMAND_FLAGS(physmem, db_show_physmem, DB_CMD_MEMSAFE)
 }
 
 #endif /* DDB */
-
-/*
- * ram pseudo driver - this reserves I/O space resources corresponding to physical
- * memory regions.
- */
-
-static void
-ram_identify(driver_t *driver, device_t parent)
-{
-
-	if (resource_disabled("ram", 0))
-		return;
-	if (BUS_ADD_CHILD(parent, 0, "ram", 0) == NULL)
-		panic("ram_identify");
-}
-
-static int
-ram_probe(device_t dev)
-{
-
-	device_quiet(dev);
-	device_set_desc(dev, "System RAM");
-	return (BUS_PROBE_SPECIFIC);
-}
-
-static int
-ram_attach(device_t dev)
-{
-	vm_paddr_t avail_list[PHYS_AVAIL_COUNT];
-	rman_res_t start, end;
-	struct region *hwp;
-	int rid, i;
-
-	rid = 0;
-
-	/* Get the avail list. */
-	bzero(avail_list, sizeof(avail_list));
-	regions_to_avail(avail_list, EXFLAG_NOALLOC | EXFLAG_NODUMP,
-	    PHYS_AVAIL_COUNT, 0, NULL, NULL);
-
-	/* Reserve all memory regions. */
-	for (i = 0; avail_list[i + 1] != 0; i += 2) {
-		start = avail_list[i];
-		end = avail_list[i + 1];
-
-		if (bootverbose)
-			device_printf(dev,
-			    "reserving memory region:   %jx-%jx\n",
-			    (uintmax_t)start, (uintmax_t)end);
-
-		if (bus_alloc_resource(dev, SYS_RES_MEMORY, &rid, start, end,
-		    end - start, 0) == NULL)
-			panic("ram_attach: resource %d failed to attach", rid);
-		rid++;
-	}
-
-	/* Now, reserve the excluded memory regions. */
-	for (i = 0, hwp = exregions; i < excnt; i++, hwp++) {
-		start = hwp->addr;
-		end = hwp->addr + hwp->size;
-
-		if (bootverbose)
-			device_printf(dev,
-			    "reserving excluded region: %jx-%jx\n",
-			    (uintmax_t)start, (uintmax_t)(end - 1));
-
-		/*
-		 * Best-effort attempt to reserve the range. This may fail, as
-		 * sometimes the excluded ranges provided by the device tree
-		 * will cover or overlap some I/O range.
-		 */
-		if (bus_alloc_resource(dev, SYS_RES_MEMORY, &rid, start, end,
-		    end - start, 0) == NULL) {
-			if (bootverbose)
-				device_printf(dev, "failed to reserve region\n");
-			continue;
-		}
-		rid++;
-	}
-
-	return (0);
-}
-
-static device_method_t ram_methods[] = {
-	/* Device interface */
-	DEVMETHOD(device_identify,	ram_identify),
-	DEVMETHOD(device_probe,		ram_probe),
-	DEVMETHOD(device_attach,	ram_attach),
-
-	DEVMETHOD_END
-};
-
-DEFINE_CLASS_0(ram, ram_driver, ram_methods, /* no softc */ 1);
-DRIVER_MODULE(ram, nexus, ram_driver, 0, 0);
-#endif /* _KERNEL */

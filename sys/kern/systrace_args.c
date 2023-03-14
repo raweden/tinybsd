@@ -6,6 +6,9 @@
  * This file is part of the DTrace syscall provider.
  */
 
+#include <sys/types.h>
+#include <sys/sysproto.h>
+
 static void
 systrace_args(int sysnum, void *params, uint64_t *uarg, int *n_args)
 {

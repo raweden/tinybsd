@@ -4594,7 +4594,7 @@ __umtx_op_robust_lists(struct thread *td, struct _umtx_op_args *uap,
 	return (0);
 }
 
-#if defined(__i386__) || defined(__amd64__)
+#if defined(__i386__) || defined(__amd64__) || defined (__WASM)
 /*
  * Provide the standard 32-bit definitions for x86, since native/compat32 use a
  * 32-bit time_t there.  Other architectures just need the i386 definitions
@@ -4714,7 +4714,7 @@ umtx_copyout_timeouti386(void *uaddr, size_t sz, struct timespec *tsp)
 }
 #endif /* !__i386__ */
 
-#if defined(__i386__) || defined(__LP64__)
+#if defined(__i386__) || defined(__LP64__) || defined (__WASM)
 static inline int
 umtx_copyin_timeoutx32(const void *uaddr, struct timespec *tsp)
 {
@@ -4839,7 +4839,7 @@ static const struct umtx_copyops umtx_native_opsi386 = {
 };
 #endif
 
-#if defined(__i386__) || defined(__LP64__)
+#if defined(__i386__) || defined(__LP64__) || defined(__WASM)
 /* i386 can emulate other 32-bit archs, too! */
 static const struct umtx_copyops umtx_native_opsx32 = {
 	.copyin_timeout = umtx_copyin_timeoutx32,

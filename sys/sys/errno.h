@@ -48,6 +48,146 @@ __END_DECLS
 #define	errno		(* __error())
 #endif
 
+#ifdef __WASI_COMPAT_ERRNO
+
+#define	EPERM		63		/* Operation not permitted */
+#define	ENOENT		44		/* No such file or directory */
+#define	ESRCH		71		/* No such process */
+#define	EINTR		27		/* Interrupted system call */
+#define	EIO		   29		/* Input/output error */
+#define	ENXIO		60		/* Device not configured */
+#define	E2BIG		1		/* Argument list too long */
+#define	ENOEXEC		45		/* Exec format error */
+#define	EBADF		8		/* Bad file descriptor */
+#define	ECHILD		12		/* No child processes */
+#define	EDEADLK		16		/* Resource deadlock avoided */
+					/* 11 was EAGAIN */
+#define	ENOMEM		48		/* Cannot allocate memory */
+#define	EACCES		2		/* Permission denied */
+#define	EFAULT		21		/* Bad address */
+#ifndef _POSIX_SOURCE
+#define	ENOTBLK		105		/* Block device required */
+#endif
+#define	EBUSY		10		/* Device busy */
+#define	EEXIST		20		/* File exists */
+#define	EXDEV		75		/* Cross-device link */
+#define	ENODEV		43		/* Operation not supported by device */
+#define	ENOTDIR		54		/* Not a directory */
+#define	EISDIR		31		/* Is a directory */
+#define	EINVAL		28		/* Invalid argument */
+#define	ENFILE		41		/* Too many open files in system */
+#define	EMFILE		33		/* Too many open files */
+#define	ENOTTY		59		/* Inappropriate ioctl for device */
+#ifndef _POSIX_SOURCE
+#define	ETXTBSY		74		/* Text file busy */
+#endif
+#define	EFBIG		22		/* File too large */
+#define	ENOSPC		51		/* No space left on device */
+#define	ESPIPE		70		/* Illegal seek */
+#define	EROFS		69		/* Read-only filesystem */
+#define	EMLINK		34		/* Too many links */
+#define	EPIPE		64		/* Broken pipe */
+
+/* math software */
+#define	EDOM		18		/* Numerical argument out of domain */
+#define	ERANGE		68		/* Result too large */
+
+/* non-blocking and interrupt i/o */
+#define	EAGAIN		6		/* Resource temporarily unavailable */
+#ifndef _POSIX_SOURCE
+#define	EWOULDBLOCK	EAGAIN		/* Operation would block */
+#define	EINPROGRESS	26		/* Operation now in progress */
+#define	EALREADY	7		/* Operation already in progress */
+
+/* ipc/network software -- argument errors */
+#define	ENOTSOCK	57		/* Socket operation on non-socket */
+#define	EDESTADDRREQ	17		/* Destination address required */
+#define	EMSGSIZE	35		/* Message too long */
+#define	EPROTOTYPE	67		/* Protocol wrong type for socket */
+#define	ENOPROTOOPT	50		/* Protocol not available */
+#define	EPROTONOSUPPORT	66		/* Protocol not supported */
+#define	ESOCKTNOSUPPORT	137		/* Socket type not supported */
+#define	EOPNOTSUPP	138		/* Operation not supported */
+#define	ENOTSUP		EOPNOTSUPP	/* Operation not supported */
+#define	EPFNOSUPPORT	139		/* Protocol family not supported */
+#define	EAFNOSUPPORT	5		/* Address family not supported by protocol family */
+#define	EADDRINUSE	3		/* Address already in use */
+#define	EADDRNOTAVAIL	4		/* Can't assign requested address */
+
+/* ipc/network software -- operational errors */
+#define	ENETDOWN	38		/* Network is down */
+#define	ENETUNREACH	40		/* Network is unreachable */
+#define	ENETRESET	39		/* Network dropped connection on reset */
+#define	ECONNABORTED	13		/* Software caused connection abort */
+#define	ECONNRESET	15		/* Connection reset by peer */
+#define	ENOBUFS		42		/* No buffer space available */
+#define	EISCONN		30		/* Socket is already connected */
+#define	ENOTCONN	53		/* Socket is not connected */
+#define	ESHUTDOWN	140		/* Can't send after socket shutdown */
+#define	ETOOMANYREFS	141		/* Too many references: can't splice */
+#define	ETIMEDOUT	73		/* Operation timed out */
+#define	ECONNREFUSED	14		/* Connection refused */
+
+#define	ELOOP		32		/* Too many levels of symbolic links */
+#endif /* _POSIX_SOURCE */
+#define	ENAMETOOLONG	37		/* File name too long */
+
+/* should be rearranged */
+#ifndef _POSIX_SOURCE
+#define	EHOSTDOWN	142		/* Host is down */
+#define	EHOSTUNREACH	23		/* No route to host */
+#endif /* _POSIX_SOURCE */
+#define	ENOTEMPTY	55		/* Directory not empty */
+
+/* quotas & mush */
+#ifndef _POSIX_SOURCE
+#define	EPROCLIM	519		/* Too many processes */
+#define	EUSERS		136		/* Too many users */
+#define	EDQUOT		19		/* Disc quota exceeded */
+
+/* Network File System */
+#define	ESTALE		72		/* Stale NFS file handle */
+#define	EREMOTE		121		/* Too many levels of remote in path */
+#define	EBADRPC		520		/* RPC struct is bad */
+#define	ERPCMISMATCH	521		/* RPC version wrong */
+#define	EPROGUNAVAIL	522		/* RPC prog. not avail */
+#define	EPROGMISMATCH	523		/* Program version wrong */
+#define	EPROCUNAVAIL	524		/* Bad procedure for program */
+#endif /* _POSIX_SOURCE */
+
+#define	ENOLCK		46		/* No locks available */
+#define	ENOSYS		52		/* Function not implemented */
+
+#ifndef _POSIX_SOURCE
+#define	EFTYPE		525		/* Inappropriate file type or format */
+#define	EAUTH		526		/* Authentication error */
+#define	ENEEDAUTH	527		/* Need authenticator */
+#define	EIDRM		24		/* Identifier removed */
+#define	ENOMSG		49		/* No message of desired type */
+#define	EOVERFLOW	61		/* Value too large to be stored in data type */
+#define	ECANCELED	11		/* Operation canceled */
+#define	EILSEQ		25		/* Illegal byte sequence */
+#define	ENOATTR		528		/* Attribute not found */
+
+#define	EDOOFUS		529		/* Programming error */
+#endif /* _POSIX_SOURCE */
+
+#define	EBADMSG		9		/* Bad message */
+#define	EMULTIHOP	36		/* Multihop attempted */
+#define	ENOLINK		47		/* Link has been severed */
+#define	EPROTO		65		/* Protocol error */
+
+#ifndef _POSIX_SOURCE
+#define	ENOTCAPABLE	530		/* Capabilities insufficient */
+#define	ECAPMODE	531		/* Not permitted in capability mode */
+#define	ENOTRECOVERABLE	56		/* State not recoverable */
+#define	EOWNERDEAD	62		/* Previous owner died */
+#define	EINTEGRITY	532		/* Integrity check failed */
+#endif /* _POSIX_SOURCE */
+
+#else
+
+// original freebsd errno
 #define	EPERM		1		/* Operation not permitted */
 #define	ENOENT		2		/* No such file or directory */
 #define	ESRCH		3		/* No such process */
@@ -182,6 +322,8 @@ __END_DECLS
 #define	EOWNERDEAD	96		/* Previous owner died */
 #define	EINTEGRITY	97		/* Integrity check failed */
 #endif /* _POSIX_SOURCE */
+
+#endif
 
 #ifndef _POSIX_SOURCE
 #define	ELAST		97		/* Must be equal largest errno */

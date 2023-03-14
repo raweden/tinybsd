@@ -159,6 +159,7 @@ static __inline int
 __sx_xlock(struct sx *sx, struct thread *td, int opts, const char *file,
     int line)
 {
+#ifndef __WASM
 	uintptr_t tid = (uintptr_t)td;
 	uintptr_t v = SX_LOCK_UNLOCKED;
 	int error = 0;
@@ -168,17 +169,22 @@ __sx_xlock(struct sx *sx, struct thread *td, int opts, const char *file,
 		error = _sx_xlock_hard(sx, v, opts);
 
 	return (error);
+#else
+	return (0);
+#endif
 }
 
 /* Release an exclusive lock. */
 static __inline void
 __sx_xunlock(struct sx *sx, struct thread *td, const char *file, int line)
 {
+#ifndef __WASM
 	uintptr_t x = (uintptr_t)td;
 
 	if (__predict_false(LOCKSTAT_PROFILE_ENABLED(sx__release) ||
 	    !atomic_fcmpset_rel_ptr(&sx->sx_lock, &x, SX_LOCK_UNLOCKED)))
 		_sx_xunlock_hard(sx, x);
+#endif
 }
 #endif
 

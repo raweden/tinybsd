@@ -38,6 +38,8 @@
 
 #include <sys/types.h>
 
+#ifndef __WASM
+
 #define	__atomic_load_bool_relaxed(p)	(*(volatile _Bool *)(p))
 #define	__atomic_store_bool_relaxed(p, v)	\
     (*(volatile _Bool *)(p) = (_Bool)(v))
@@ -139,4 +141,5 @@
 
 #define	atomic_interrupt_fence()	__compiler_membar()
 
+#endif
 #endif /* !_SYS_ATOMIC_COMMON_H_ */

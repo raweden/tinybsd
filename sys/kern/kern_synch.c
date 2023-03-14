@@ -616,6 +616,7 @@ setrunnable(struct thread *td, int srqflags)
 static void
 loadav(void *arg)
 {
+#ifndef __WASM
 	int i;
 	uint64_t nrun;
 	struct loadavg *avg;
@@ -635,6 +636,7 @@ loadav(void *arg)
 	callout_reset_sbt(&loadav_callout,
 	    SBT_1US * (4000000 + (int)(random() % 2000001)), SBT_1US,
 	    loadav, NULL, C_DIRECT_EXEC | C_PREL(32));
+#endif
 }
 
 static void

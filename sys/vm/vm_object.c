@@ -69,6 +69,8 @@ __FBSDID("$FreeBSD$");
 
 #include "opt_vm.h"
 
+#include <machine/atomic.h>
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/blockcount.h>

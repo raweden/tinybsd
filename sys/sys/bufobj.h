@@ -39,7 +39,7 @@
  * raid3 and raid5.
  *
  * All vnodes will contain a bufobj initially, but down the road we may
- * want to only allocate bufobjs when they are needed.  There could be a
+ * want to only allocate bufobjs when they are needed. There could be a
  * large number of vnodes in the system which wouldn't need a bufobj during
  * their lifetime.
  *

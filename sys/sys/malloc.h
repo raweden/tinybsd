@@ -225,19 +225,19 @@ void	*malloc(size_t size, struct malloc_type *type, int flags) __malloc_like
  * an inline function variant ended up being compiled to a mere malloc call
  * regardless of argument. gcc generates expected code (like the above).
  */
-#define	malloc(size, type, flags) ({					\
-	void *_malloc_item;						\
-	size_t _size = (size);						\
-	if (__builtin_constant_p(size) && __builtin_constant_p(flags) &&\
-	    ((flags) & M_ZERO) != 0) {					\
-		_malloc_item = malloc(_size, type, (flags) &~ M_ZERO);	\
-		if (((flags) & M_WAITOK) != 0 ||			\
-		    __predict_true(_malloc_item != NULL))		\
-			memset(_malloc_item, 0, _size);			\
-	} else {							\
-		_malloc_item = malloc(_size, type, flags);		\
-	}								\
-	_malloc_item;							\
+#define malloc(size, type, flags) ({                                    \
+    void *_malloc_item;                                                 \
+    size_t _size = (size);                                              \
+    if (__builtin_constant_p(size) && __builtin_constant_p(flags) &&    \
+        ((flags) & M_ZERO) != 0) {                                      \
+        _malloc_item = malloc(_size, type, (flags) &~ M_ZERO);          \
+        if (((flags) & M_WAITOK) != 0 ||                                \
+            __predict_true(_malloc_item != NULL))                       \
+            memset(_malloc_item, 0, _size);                             \
+    } else {                                                            \
+        _malloc_item = malloc(_size, type, flags);                      \
+    }                                                                   \
+    _malloc_item;                                                       \
 })
 
 void	*malloc_domainset(size_t size, struct malloc_type *type,
@@ -306,12 +306,12 @@ extern void *Malloc(size_t bytes, const char *file, int line);
 #define M_NOWAIT 2
 #define MALLOC_DECLARE(x)
 
-#define kmem_zalloc(size, flags) ({					\
-	void *p = Malloc((size), __FILE__, __LINE__);			\
-	if (p == NULL && (flags &  M_WAITOK) != 0)			\
-		panic("Could not malloc %zd bytes with M_WAITOK from %s line %d", \
-		    (size_t)size, __FILE__, __LINE__);			\
-	p;								\
+#define kmem_zalloc(size, flags) ({                                         \
+    void *p = Malloc((size), __FILE__, __LINE__);                           \
+    if (p == NULL && (flags &  M_WAITOK) != 0)                              \
+        panic("Could not malloc %zd bytes with M_WAITOK from %s line %d",   \
+            (size_t)size, __FILE__, __LINE__);                              \
+    p;                                                                      \
 })
 
 #define kmem_free(p, size) Free(p, __FILE__, __LINE__)

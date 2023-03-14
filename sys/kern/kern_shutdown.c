@@ -666,6 +666,7 @@ shutdown_halt(void *junk, int howto)
 
 		wdog_kern_pat(WD_TO_NEVER);
 
+#ifndef __WASM
 		switch (cngetc()) {
 		case -1:		/* No console, just die */
 			cpu_halt();
@@ -673,6 +674,7 @@ shutdown_halt(void *junk, int howto)
 		default:
 			break;
 		}
+#endif
 	}
 }
 
@@ -737,8 +739,10 @@ shutdown_reset(void *junk, int howto)
 	spinlock_enter();
 #endif
 
+#ifndef __WASM
 	cpu_reset();
 	/* NOTREACHED */ /* assuming reset worked */
+#endif
 }
 
 #if defined(WITNESS) || defined(INVARIANT_SUPPORT)
