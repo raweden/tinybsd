@@ -2770,7 +2770,7 @@ knote_dequeue(struct knote *kn)
 }
 
 static void
-knote_init(void)
+knote_init(void *arg __unused)
 {
 
 	knote_zone = uma_zcreate("KNOTE", sizeof(struct knote), NULL, NULL,

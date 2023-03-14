@@ -119,7 +119,7 @@ static int	filt_sigattach(struct knote *kn);
 static void	filt_sigdetach(struct knote *kn);
 static int	filt_signal(struct knote *kn, long hint);
 static struct thread *sigtd(struct proc *p, int sig, bool fast_sigblock);
-static void	sigqueue_start(void);
+static void	sigqueue_start(void *);
 static void	sigfastblock_setpend(struct thread *td, bool resched);
 
 static uma_zone_t	ksiginfo_zone = NULL;

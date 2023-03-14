@@ -1133,7 +1133,7 @@ ppsratecheck(struct timeval *lasttime, int *curpps, int maxpps)
 }
 
 static void
-itimer_start(void)
+itimer_start(void *arg __unused)
 {
 	static const struct kclock rt_clock = {
 		.timer_create  = realtimer_create,
