@@ -128,8 +128,10 @@ static int vm_pageout_cluster(vm_page_t m);
 static void vm_pageout_mightbe_oom(struct vm_domain *vmd, int page_shortage,
     int starting_page_shortage);
 
+#ifndef __WASM
 SYSINIT(pagedaemon_init, SI_SUB_KTHREAD_PAGE, SI_ORDER_FIRST, vm_pageout_init,
     NULL);
+#endif
 
 struct proc *pageproc;
 
@@ -138,8 +140,10 @@ static struct kproc_desc page_kp = {
 	vm_pageout,
 	&pageproc
 };
+#ifndef __WASM
 SYSINIT(pagedaemon, SI_SUB_KTHREAD_PAGE, SI_ORDER_SECOND, kproc_start,
     &page_kp);
+#endif
 
 SDT_PROVIDER_DEFINE(vm);
 SDT_PROBE_DEFINE(vm, , , vm__lowmem_scan);

@@ -159,7 +159,9 @@ SYSINIT(placeholder, SI_SUB_DUMMY, SI_ORDER_ANY, NULL, NULL);
  * The sysinit table itself.  Items are checked off as the are run.
  * If we want to register new sysinit types, add them to newsysinit.
  */
+#ifndef __WASM
 SET_DECLARE(sysinit_set, struct sysinit);
+#endif
 struct sysinit **sysinit, **sysinit_end;
 struct sysinit **newsysinit, **newsysinit_end;
 
@@ -216,6 +218,13 @@ symbol_name(vm_offset_t va, db_strategy_t strategy)
 }
 #endif
 
+#ifdef __WASM
+extern uintptr_t *__start_set_sysinit_set;
+__GLOBL(__start_set_sysinit_set);
+extern uintptr_t *__stop_set_sysinit_set;
+__GLOBL(__stop_set_sysinit_set);
+#endif
+
 /*
  * System startup; initialize the world, create process 0, mount root
  * filesystem, and fork to create init and pagedaemon.  Most of the
@@ -246,8 +255,13 @@ mi_startup(void)
 		bootverbose++;
 
 	if (sysinit == NULL) {
+#ifndef __WASM
+		sysinit = &__start_set_sysinit_set; //SET_BEGIN(sysinit_set);
+		sysinit_end = &__stop_set_sysinit_set; //SET_LIMIT(sysinit_set);
+#else
 		sysinit = SET_BEGIN(sysinit_set);
 		sysinit_end = SET_LIMIT(sysinit_set);
+#endif
 	}
 
 restart:
@@ -343,11 +357,13 @@ restart:
 	mtx_assert(&Giant, MA_OWNED | MA_NOTRECURSED);
 	mtx_unlock(&Giant);
 
+#ifndef __WASM
 	/*
 	 * Now hand over this thread to swapper.
 	 */
 	swapper();
 	/* NOTREACHED*/
+#endif
 }
 
 static void
@@ -481,13 +497,13 @@ proc0_init(void *dummy __unused)
 	 */
 	procinit();	/* set up proc zone */
 	threadinit();	/* set up UMA zones */
-
+#ifndef __WASM
 	/*
 	 * Initialise scheduler resources.
 	 * Add scheduler specific parts to proc, thread as needed.
 	 */
 	schedinit();	/* scheduler gets its house in order */
-
+#endif
 	/*
 	 * Create process 0 (the swapper).
 	 */
@@ -608,7 +624,9 @@ proc0_init(void *dummy __unused)
 	/* Allocate a prototype map so we have something to fork. */
 	p->p_vmspace = &vmspace0;
 	refcount_init(&vmspace0.vm_refcnt, 1);
+#ifndef __WASM
 	pmap_pinit0(vmspace_pmap(&vmspace0));
+#endif
 
 	/*
 	 * proc0 is not expected to enter usermode, so there is no special

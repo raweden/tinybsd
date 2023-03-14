@@ -578,5 +578,6 @@ kcov_init(const void *unused)
 	EVENTHANDLER_REGISTER(thread_dtor, kcov_thread_dtor, NULL,
 	    EVENTHANDLER_PRI_ANY);
 }
-
+#ifndef __WASM // FIXME!
 SYSINIT(kcovdev, SI_SUB_LAST, SI_ORDER_ANY, kcov_init, NULL);
+#endif

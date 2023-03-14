@@ -189,7 +189,9 @@ static int vm_page_zone_import(void *arg, void **store, int cnt, int domain,
     int flags);
 static void vm_page_zone_release(void *arg, void **store, int cnt);
 
+#ifndef __WASM
 SYSINIT(vm_page, SI_SUB_VM, SI_ORDER_SECOND, vm_page_init, NULL);
+#endif
 
 static void
 vm_page_init(void *dummy)

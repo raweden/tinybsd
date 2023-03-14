@@ -449,7 +449,9 @@ initclocks(void *dummy __unused)
 		wdog_software_attach = watchdog_attach;
 #endif
 }
+#ifndef __WASM
 SYSINIT(clocks, SI_SUB_CLOCKS, SI_ORDER_FIRST, initclocks, NULL);
+#endif
 
 static __noinline void
 hardclock_itimer(struct thread *td, struct pstats *pstats, int cnt, int usermode)
