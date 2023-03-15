@@ -62,6 +62,9 @@ __FBSDID("$FreeBSD$");
 #include <sys/syslog.h>
 #include <sys/cons.h>
 #include <sys/uio.h>
+#ifdef __WASM
+#include <machine/wasm_module.h>
+#endif
 #else /* !_KERNEL */
 #include <errno.h>
 #endif
@@ -269,6 +272,10 @@ vtprintf(struct proc *p, int pri, const char *fmt, va_list ap)
 	msgbuftrigger = 1;
 }
 
+#ifdef __WASM
+void tmp_console_log(const char *buf, int bufsz, int flags, int level) __WASM_IMPORT(kern, console_log);
+#endif
+
 static int
 _vprintf(int level, int flags, const char *fmt, va_list ap)
 {
@@ -294,6 +301,17 @@ _vprintf(int level, int flags, const char *fmt, va_list ap)
 #endif
 
 	retval = kvprintf(fmt, putchar, &pca, 10, ap);
+
+#if defined(__WASM) && defined(PRINTF_BUFR_SIZE)
+	{
+		int retval;
+		char bufr[1024];
+
+		retval = kvprintf(fmt, NULL, (void *) bufr, 10, ap);
+	/* Write any buffered console/log output: */
+		tmp_console_log(bufr, retval, flags, level);
+	}
+#endif
 
 #ifdef PRINTF_BUFR_SIZE
 	/* Write any buffered console/log output: */
