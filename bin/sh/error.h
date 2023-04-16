@@ -92,3 +92,10 @@ void errorwithstatus(int, const char *, ...) __printf0like(2, 3) __dead2;
 
 #define setjmp(jmploc)	_setjmp(jmploc)
 #define longjmp(jmploc, val)	_longjmp(jmploc, val)
+
+#ifdef __WASM
+#undef setjmp
+#define setjmp(x) (1)
+#undef longjmp
+#define longjmp(x, y)
+#endif

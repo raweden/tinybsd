@@ -651,9 +651,11 @@ ntp_update_second(int64_t *adjustment, time_t *newsec)
  * than 1024 s, operation should be in frequency-lock mode, where the
  * loop is disciplined to frequency. Between 256 s and 1024 s, the mode
  * is selected by the STA_MODE status bit.
+ * 
+ * @param offset clock offset (ns)
  */
 static void
-hardupdate(long offset /* clock offset (ns) */)
+hardupdate(long offset)
 {
 	long mtemp;
 	l_fp ftemp;

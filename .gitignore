@@ -192,6 +192,11 @@ sys/opencrypto/cryptodev_if.c
 sys/conf/vers.c
 sys/tools/vers.c
 sys/tools/version
+contrib/one-true-awk/a.out
+contrib/one-true-awk/awkgram.tab.c
+contrib/one-true-awk/awkgram.tab.h
+contrib/one-true-awk/maketab
+contrib/one-true-awk/proctab.c
 # end of generated files.
 
 missing-libc.txt
@@ -206,3 +211,11 @@ lib/libkvm/BUILD.gn
 lib/ncurses/ncurses/BUILD.gn
 contrib/libedit/BUILD.gn
 contrib/ncurses/BUILD.gn
+lib/msun/BUILD.gn
+sys/contrib/zlib/BUILD.gn
+compile_commands-tmp.json
+gen-src.txt
+Ideas & Roadmap.md
+Memory Management.md
+Refactor notes.md
+wasm-call-in-main.md

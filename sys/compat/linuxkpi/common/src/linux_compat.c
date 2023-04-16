@@ -1728,7 +1728,7 @@ linux_file_ioctl(struct file *fp, u_long cmd, void *data, struct ucred *cred,
 		*(int *)data = fgetown(&filp->f_sigio);
 		break;
 	case FIODGNAME:
-#ifdef	COMPAT_FREEBSD32
+#if	defined(COMPAT_FREEBSD32) && !defined(__WASM)
 	case FIODGNAME_32:
 #endif
 		if (filp->f_cdev == NULL || filp->f_cdev->cdev == NULL) {

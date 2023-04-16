@@ -40,6 +40,13 @@ THIS SOFTWARE.
 #include "awk.h"
 #include "awkgram.tab.h"
 
+#ifdef __WASM
+#undef setjmp
+#define setjmp(x) (1)
+#undef longjmp
+#define longjmp(x, y)
+#endif
+
 static void stdinit(void);
 static void flush_all(void);
 

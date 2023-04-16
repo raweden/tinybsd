@@ -65,6 +65,13 @@ static void	stime_file(const char *, struct timespec *);
 static int	timeoffset(const char *);
 static void	usage(const char *);
 
+#ifdef __WASM
+#ifndef __WASM_EXPORT
+#define __WASM_EXPORT(name) __attribute__((export_name(#name)))
+#endif
+__WASM_EXPORT(main)
+#endif
+
 int
 main(int argc, char *argv[])
 {

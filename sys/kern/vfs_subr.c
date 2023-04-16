@@ -746,11 +746,13 @@ vntblinit(void *dummy __unused)
 	mtx_init(&sync_mtx, "Syncer mtx", NULL, MTX_DEF);
 	cv_init(&sync_wakeup, "syncer");
 
+#ifndef __WASM
 	CPU_FOREACH(cpu) {
 		vd = DPCPU_ID_PTR((cpu), vd);
 		bzero(vd, sizeof(*vd));
 		mtx_init(&vd->lock, "vdbatch", NULL, MTX_DEF);
 	}
+#endif
 }
 SYSINIT(vfs, SI_SUB_VFS, SI_ORDER_FIRST, vntblinit, NULL);
 
@@ -1426,7 +1428,9 @@ vfs_freevnodes_inc(void)
 	struct vdbatch *vd;
 
 	critical_enter();
+#ifndef __WASM
 	vd = DPCPU_PTR(vd);
+#endif
 	vd->freevnodes++;
 	critical_exit();
 }
@@ -1437,7 +1441,9 @@ vfs_freevnodes_dec(void)
 	struct vdbatch *vd;
 
 	critical_enter();
+#ifndef __WASM
 	vd = DPCPU_PTR(vd);
+#endif
 	vd->freevnodes--;
 	critical_exit();
 }
@@ -1457,10 +1463,12 @@ vnlru_read_freevnodes(void)
 	if (slop < VNLRU_FREEVNODES_SLOP)
 		return (freevnodes >= 0 ? freevnodes : 0);
 	freevnodes_old = freevnodes;
+#ifndef __WASM
 	CPU_FOREACH(cpu) {
 		vd = DPCPU_ID_PTR((cpu), vd);
 		freevnodes_old += vd->freevnodes;
 	}
+#endif
 	return (freevnodes_old >= 0 ? freevnodes_old : 0);
 }
 
@@ -3542,8 +3550,10 @@ vdbatch_enqueue(struct vnode *vp)
 		return;
 	}
 
+#ifndef __WASM
 	sched_pin();
 	vd = DPCPU_PTR(vd);
+#endif
 	mtx_lock(&vd->lock);
 	MPASS(vd->index < VDBATCH_SIZE);
 	MPASS(vd->tab[vd->index] == NULL);
@@ -3558,7 +3568,9 @@ vdbatch_enqueue(struct vnode *vp)
 	if (vd->index == VDBATCH_SIZE)
 		vdbatch_process(vd);
 	mtx_unlock(&vd->lock);
+#ifndef __WASM
 	sched_unpin();
+#endif
 }
 
 /*
@@ -3580,7 +3592,9 @@ vdbatch_dequeue(struct vnode *vp)
 	if (cpu == NOCPU)
 		return;
 
+#ifndef __WASM
 	vd = DPCPU_ID_PTR(cpu, vd);
+#endif
 	mtx_lock(&vd->lock);
 	for (i = 0; i < vd->index; i++) {
 		if (vd->tab[i] != vp)

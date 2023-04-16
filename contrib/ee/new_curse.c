@@ -82,6 +82,10 @@ char * new_curse_name= "@(#) new_curse.c $Revision: 1.54 $";
 #include <sys/ioctl.h>
 #endif
 
+#ifdef __WASM
+#include <sys/ioctl_compat.h>
+#endif
+
 
 WINDOW *curscr;
 static WINDOW *virtual_scr;
