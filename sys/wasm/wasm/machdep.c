@@ -117,6 +117,8 @@ init_proc0(vm_offset_t kstack)
 	pcpup->pc_curpcb = thread0.td_pcb;
 }
 
+static struct mtx thread0_lock;
+
 void initwasm(struct wasm_bootparams *wabp)
 {
     struct pcpu *pcpup;
@@ -124,6 +126,9 @@ void initwasm(struct wasm_bootparams *wabp)
 
     __mainthread = __curthread;
     pageproc = &proc0;
+
+	mtx_init(&thread0_lock, "thread0_mtx", NULL, MTX_DEF);
+	thread0.td_lock = &thread0_lock;
 
     TSRAW(__curthread, TS_ENTER, __func__, NULL);
 
