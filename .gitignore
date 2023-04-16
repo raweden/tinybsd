@@ -213,9 +213,26 @@ contrib/libedit/BUILD.gn
 contrib/ncurses/BUILD.gn
 lib/msun/BUILD.gn
 sys/contrib/zlib/BUILD.gn
+
+# various log and temporary notes files used under development, and some source which does not have any purpose yet.
 compile_commands-tmp.json
 gen-src.txt
 Ideas & Roadmap.md
 Memory Management.md
 Refactor notes.md
 wasm-call-in-main.md
+lib/msun/wasm/Makefile.inc
+lib/msun/wasm/Symbol.map
+sys/tools/getopts.js
+sys/tools/newvers.js
+README-snippets-not-published.md
+sys/wasm/include/pmap-v6.h
+sys/wasm/include/wasm/kdispatch.h
+sys/wasm/wasm/kmalloc.c
+sys/wasm/wasm/wasm_cons.c
+
+# idbfs, remove these once there is something in there..
+sys/fs/idbfs/idbfs_subr.c
+sys/fs/idbfs/idbfs_vfsops.c
+sys/fs/idbfs/idbfs_vnops.c
+sys/fs/idbfs/idbfs.h
